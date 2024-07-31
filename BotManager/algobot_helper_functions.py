@@ -391,6 +391,33 @@ def get_signal(df):
     #print(df)
     df['ema5'] = ta.ema(df['close'], 5)
     df['incr'] = calculate_incr(df)
+
+    # Parameters  for big bars ---------------------
+    length = 10
+    threshold = 1.5
+    max_size_multiplier = 2.0
+
+    # Calculate the size of each candle
+    df['candle_size'] = abs(df['close'] - df['open'])
+
+    # Calculate the average size of the last `length` candles
+    df['average_size'] = df['candle_size'].rolling(window=length).mean()
+
+    # Determine the maximum allowed size based on the average size
+    df['max_allowed_size'] = df['average_size'] * max_size_multiplier
+
+    # Determine if the current candle is significantly bigger than the average
+    df['is_big_bar'] = (df['candle_size'] > df['average_size'] * threshold) & (
+                df['candle_size'] <= df['max_allowed_size'])
+
+    # Determine if the big bar is red or green
+    df['big_bar_color'] = df.apply(lambda row: 'Green' if row['is_big_bar'] and row['close'] > row['open'] else (
+        'Red' if row['is_big_bar'] and row['close'] < row['open'] else 'None'), axis=1)
+
+    isredbigbar = df['is_big_bar'].iloc[-2] == True and df['is_big_bar'].iloc[-3] == False and \
+                  df['big_bar_color'].iloc[-2] == 'Red'
+    # ------------------------------------------------------
+
     df = df.iloc[-2, :]
     print(df)
 
@@ -426,7 +453,7 @@ def get_signal(df):
     decimalpoint = float('0.'+'0'*(price_precision-1) + '1')
     triggerdecimalpoint = float('0.' + '0' * (price_precision - 1) + '3')
 
-    if TrendShootingStar: #isShootingStarTouchingEMA and df['incr']< -0.1:
+    if TrendShootingStar or isredbigbar: #isShootingStarTouchingEMA and df['incr']< -0.1:
         SLTPRatio = 2  # 1:1.2
         # signal = 1
         BUY_PRICE = round(df['low']-decimalpoint, price_precision)
