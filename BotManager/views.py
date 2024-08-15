@@ -71,10 +71,17 @@ def bot():
                             #print(coinpair)
                             signal_data=hf.get_signal(df)
                             prev_day = hf.fetch_historical_data(client,coinpair,'1d',5)
+                            print(prev_day)
                             prev_day = prev_day.iloc[-2,:]
-                            if signal_data[1]['side']=='sell':
-                                if prev_day['close'] < signal_data[1]["BUY_PRICE"]:
-                                    signal_data = None
+                            print(prev_day)
+                            print("signal side ",signal_data[1]['side'])
+                            if signal_data!=None:
+                                if signal_data[1]['side']=='sell':
+                                    print("sell side")
+                                    print("previous close", prev_day['close'], type(prev_day['close']))
+                                    print("buy close", signal_data[1]["BUY_PRICE"], type(signal_data[1]["BUY_PRICE"]))
+                                    if prev_day['close'] < signal_data[1]["BUY_PRICE"]:
+                                        signal_data = None
                             #break
                             if signal_data!=None:
                                 #print([coinpair,signal_data])
