@@ -76,13 +76,13 @@ def bot():
                             print(prev_day)
                             prev_day = prev_day.iloc[-2,:]
                             print(prev_day)
-                            print("signal side ",signal_data[1]['side'])
                             if signal_data!=None:
-                                if signal_data[1]['side']=='sell':
+                                print("signal side ", signal_data['side'])
+                                if signal_data['side']=='sell':
                                     print("sell side")
                                     print("previous close", prev_day['close'], type(prev_day['close']))
-                                    print("buy close", signal_data[1]["BUY_PRICE"], type(signal_data[1]["BUY_PRICE"]))
-                                    if prev_day['close'] < signal_data[1]["BUY_PRICE"]:
+                                    print("buy close", signal_data["BUY_PRICE"], type(signal_data["BUY_PRICE"]))
+                                    if prev_day['close'] < signal_data["BUY_PRICE"]:
                                         signal_data = None
                             #break
                             if signal_data!=None:
