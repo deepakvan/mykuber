@@ -67,9 +67,11 @@ def bot():
                     signal_list=[]
                     for coinpair in coinpair_list:
                         if not coinpair in pos:
+                            print("Coin name :- ",coinpair)
                             df=hf.fetch_historical_data(client,coinpair,'15m',15)
-                            #print(coinpair)
+                            print(df)
                             signal_data=hf.get_signal(df)
+                            print(signal_data)
                             prev_day = hf.fetch_historical_data(client,coinpair,'1d',5)
                             print(prev_day)
                             prev_day = prev_day.iloc[-2,:]
