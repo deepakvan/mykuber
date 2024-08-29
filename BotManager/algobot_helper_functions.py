@@ -391,6 +391,7 @@ def get_signal(df):
     #print(df)
     df['ema5'] = ta.ema(df['close'], 5)
     df['incr'] = calculate_incr(df)
+    df['superd'] = ta.supertrend(df['high'],df['low'],df['close'],10,1.5)['SUPERTd_10_1.5']
 
     # Parameters  for big bars ---------------------
     length = 10
@@ -415,7 +416,13 @@ def get_signal(df):
         'Red' if row['is_big_bar'] and row['close'] < row['open'] else 'None'), axis=1)
 
     isredbigbar = df['is_big_bar'].iloc[-2] == True and df['is_big_bar'].iloc[-3] == False and \
-                  df['big_bar_color'].iloc[-2] == 'Red'
+                  df['big_bar_color'].iloc[-2] == 'Red' and \
+                  df['superd'].iloc[-2] == -1 and df['superd'].iloc[-3] == -1
+
+    isgreenbigbar = df['is_big_bar'].iloc[-2] == True and df['is_big_bar'].iloc[-3] == False and \
+                  df['big_bar_color'].iloc[-2] == 'Green' and \
+                  df['superd'].iloc[-2] == 1 and df['superd'].iloc[-3] == 1
+
     # ------------------------------------------------------
 
     df = df.iloc[-2, :]
@@ -476,27 +483,27 @@ def get_signal(df):
         return trade
 
     # for long trade
-    # elif TrendHammer: #isHammerTouchingEMA and df['incr']> 0.1:  #or isEmaBuy:
-    #     SLTPRatio = 2  # 1:1.2
-    #     # signal = 1
-    #     BUY_PRICE = round(df['high']+decimalpoint, price_precision) #df['high']
-    #     BUY_PRICE_Trigger = round(df['high'], price_precision)
-    #     SL = round(df['low'] - decimalpoint, price_precision)  #df['low']
-    #     SL_Trigger = SL  #round(SL + ((BUY_PRICE - SL) / 2), price_precision)
-    #     TP = round(BUY_PRICE + SLTPRatio * (BUY_PRICE - SL),price_precision)
-    #     TP_Trigger = round(TP - triggerdecimalpoint, price_precision)
-    #     last_buy_price = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.2), price_precision)
-    #     Trailing_SL1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.2), price_precision)
-    #     Trailing_SL_Condition1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.8), price_precision)
-    #     trade = {"side": 'buy',
-    #              "BUY_PRICE": BUY_PRICE, "BUY_PRICE_Trigger":BUY_PRICE_Trigger,
-    #              "last_buy_price": last_buy_price,
-    #              "SL": SL, "SL_Trigger":SL_Trigger,
-    #              "TP": TP, "TP_Trigger":TP_Trigger,
-    #              "Trailing_stopLosses":{"Trailing_SL1":Trailing_SL1,"Trailing_SL_Condition1":Trailing_SL_Condition1},
-    #              }
-    #     # print(trade)
-    #     return trade
+    elif isgreenbigbar: #isHammerTouchingEMA and df['incr']> 0.1:  #or isEmaBuy:
+        SLTPRatio = 2  # 1:1.2
+        # signal = 1
+        BUY_PRICE = round(df['high']+decimalpoint, price_precision) #df['high']
+        BUY_PRICE_Trigger = round(df['high'], price_precision)
+        SL = round(df['low'] - decimalpoint, price_precision)  #df['low']
+        SL_Trigger = SL  #round(SL + ((BUY_PRICE - SL) / 2), price_precision)
+        TP = round(BUY_PRICE + SLTPRatio * (BUY_PRICE - SL),price_precision)
+        TP_Trigger = round(TP - triggerdecimalpoint, price_precision)
+        last_buy_price = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.2), price_precision)
+        Trailing_SL1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.2), price_precision)
+        Trailing_SL_Condition1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.8), price_precision)
+        trade = {"side": 'buy',
+                 "BUY_PRICE": BUY_PRICE, "BUY_PRICE_Trigger":BUY_PRICE_Trigger,
+                 "last_buy_price": last_buy_price,
+                 "SL": SL, "SL_Trigger":SL_Trigger,
+                 "TP": TP, "TP_Trigger":TP_Trigger,
+                 "Trailing_stopLosses":{"Trailing_SL1":Trailing_SL1,"Trailing_SL_Condition1":Trailing_SL_Condition1},
+                 }
+        # print(trade)
+        return trade
 
     return None
 
