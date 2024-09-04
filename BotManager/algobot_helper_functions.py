@@ -423,6 +423,8 @@ def get_signal(df):
                   df['big_bar_color'].iloc[-2] == 'Green' and \
                   df['superd'].iloc[-2] == 1 and df['superd'].iloc[-3] == 1
 
+    isdowntrend = df['superd'].iloc[-2] == -1 and df['superd'].iloc[-3] == -1
+    isuptrend = df['superd'].iloc[-2] == 1 and df['superd'].iloc[-3] == 1
     # ------------------------------------------------------
 
     df = df.iloc[-2, :]
@@ -443,7 +445,7 @@ def get_signal(df):
                           (df['low'] <= df['ema5'])
 
     TrendShootingStar = (df['open'] < df['low'] + halfCandleHeight) and (df['close']< df['low'] + halfCandleHeight) and \
-                        df['incr'] < -0.1
+                        df['incr'] < -0.1 and isdowntrend
 
     TrendHammer = (df['open'] > df['high'] - halfCandleHeight) and (df['close'] > df['high'] - halfCandleHeight) and \
                   df['incr'] > 0.1
