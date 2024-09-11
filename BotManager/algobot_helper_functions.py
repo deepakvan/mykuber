@@ -396,7 +396,7 @@ def get_signal(df):
     # Parameters  for big bars ---------------------
     length = 10
     threshold = 1.5
-    max_size_multiplier = 2.0
+    max_size_multiplier = 4.0
 
     # Calculate the size of each candle
     df['candle_size'] = abs(df['close'] - df['open'])
