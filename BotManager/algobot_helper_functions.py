@@ -392,11 +392,11 @@ def get_signal(df):
     df['ema5'] = ta.ema(df['close'], 5)
     df['incr'] = calculate_incr(df)
     df['superd'] = ta.supertrend(df['high'],df['low'],df['close'],10,1.5)['SUPERTd_10_1.5']
-
+    df['superv'] = ta.supertrend(df['high'], df['low'], df['close'], 10, 1.5)['SUPERT_10_1.5']
     # Parameters  for big bars ---------------------
     length = 10
-    threshold = 1.5
-    max_size_multiplier = 4.0
+    threshold = 0.5
+    max_size_multiplier = 2.0
 
     # Calculate the size of each candle
     df['candle_size'] = abs(df['close'] - df['open'])
@@ -411,44 +411,31 @@ def get_signal(df):
     df['is_big_bar'] = (df['candle_size'] > df['average_size'] * threshold) & (
                 df['candle_size'] <= df['max_allowed_size'])
 
-    # Determine if the big bar is red or green
-    df['big_bar_color'] = df.apply(lambda row: 'Green' if row['is_big_bar'] and row['close'] > row['open'] else (
-        'Red' if row['is_big_bar'] and row['close'] < row['open'] else 'None'), axis=1)
 
-    isredbigbar = df['is_big_bar'].iloc[-2] == True and df['is_big_bar'].iloc[-3] == False and \
-                  df['big_bar_color'].iloc[-2] == 'Red' and \
-                  df['superd'].iloc[-2] == -1 and df['superd'].iloc[-3] == -1
+    isredbigbar = df['close'].iloc[-2] < df['open'].iloc[-2] and df['superd'].iloc[-2] == -1 and \
+                  df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
+                  df['is_big_bar'].iloc[-2] == True
 
-    isgreenbigbar = df['is_big_bar'].iloc[-2] == True and df['is_big_bar'].iloc[-3] == False and \
-                  df['big_bar_color'].iloc[-2] == 'Green' and \
-                  df['superd'].iloc[-2] == 1 and df['superd'].iloc[-3] == 1
+    isgreenbigbar = df['close'].iloc[-2] > df['open'].iloc[-2] and df['superd'].iloc[-2] == 1 and \
+                  df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
+                  df['is_big_bar'].iloc[-2] == True
 
-    isdowntrend = df['superd'].iloc[-2] == -1 and df['superd'].iloc[-3] == -1
-    isuptrend = df['superd'].iloc[-2] == 1 and df['superd'].iloc[-3] == 1
+    # isdowntrend = df['superd'].iloc[-2] == -1 and df['superd'].iloc[-3] == -1
+    # isuptrend = df['superd'].iloc[-2] == 1 and df['superd'].iloc[-3] == 1
     # ------------------------------------------------------
 
     df = df.iloc[-2, :]
     print(df)
 
-    candleHeight = df['high'] - df['low']
+    #candleHeight = df['high'] - df['low']
     # Calculate 50 % of the candle height
-    halfCandleHeight = candleHeight * 0.5
+    #halfCandleHeight = candleHeight * 0.5
 
-    isShootingStarTouchingEMA = (df['open'] < df['low'] + halfCandleHeight) and \
-                                (df['close'] < df['low'] + halfCandleHeight) and \
-                                (df['open'] < df['ema5']) and (df['close'] < df['ema5']) and \
-                                (df['high'] >= df['ema5'])
-
-    isHammerTouchingEMA = (df['open'] > df['high'] - halfCandleHeight) and \
-                          (df['close'] > df['high'] - halfCandleHeight) and \
-                          (df['open'] > df['ema5']) and (df['close'] > df['ema5']) and \
-                          (df['low'] <= df['ema5'])
-
-    TrendShootingStar = (df['open'] < df['low'] + halfCandleHeight) and (df['close']< df['low'] + halfCandleHeight) and \
-                        df['incr'] < -0.1 and isdowntrend
-
-    TrendHammer = (df['open'] > df['high'] - halfCandleHeight) and (df['close'] > df['high'] - halfCandleHeight) and \
-                  df['incr'] > 0.1
+    # TrendShootingStar = (df['open'] < df['low'] + halfCandleHeight) and (df['close']< df['low'] + halfCandleHeight) and \
+    #                     df['incr'] < -0.1 and isdowntrend
+    #
+    # TrendHammer = (df['open'] > df['high'] - halfCandleHeight) and (df['close'] > df['high'] - halfCandleHeight) and \
+    #               df['incr'] > 0.1
 
 
     price_precision = len(str(df['open']).split('.')[1])
@@ -462,7 +449,7 @@ def get_signal(df):
     decimalpoint = float('0.'+'0'*(price_precision-1) + '1')
     triggerdecimalpoint = float('0.' + '0' * (price_precision - 1) + '3')
 
-    if TrendShootingStar or isredbigbar: #isShootingStarTouchingEMA and df['incr']< -0.1:
+    if isredbigbar:
         SLTPRatio = 2  # 1:1.2
         # signal = 1
         BUY_PRICE = round(df['low']-decimalpoint, price_precision)
@@ -485,7 +472,7 @@ def get_signal(df):
         return trade
 
     # for long trade
-    elif isgreenbigbar: #isHammerTouchingEMA and df['incr']> 0.1:  #or isEmaBuy:
+    elif isgreenbigbar:
         SLTPRatio = 2  # 1:1.2
         # signal = 1
         BUY_PRICE = round(df['high']+decimalpoint, price_precision) #df['high']
