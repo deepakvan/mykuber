@@ -47,6 +47,17 @@ def bot():
                 if balance != None:
                     print("My balance is: ", balance, " USDT")
                     models.BotLogs(description="My balance is: "+ str(balance)+ " USDT").save()
+                    if models.StaticData.objects.exists():
+                        obj = models.StaticData.objects.get(static_id=1)
+                        volume = int(obj.volume)
+                        new_volume = 1
+                        if balance >= 20:
+                            new_volume = int(volume/10)
+                        if new_volume != volume:
+                            obj.volume = new_volume
+                            obj.save()
+                            print("Volume updated to ", new_volume," from ", volume)
+
                     # getting position list:
                     pos = hf.get_pos(client)
                     print(f'You have {len(pos)} opened positions:\n{pos}')
