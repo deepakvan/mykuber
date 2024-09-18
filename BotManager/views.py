@@ -53,6 +53,8 @@ def bot():
                         new_volume = 1
                         if balance >= 20:
                             new_volume = int(volume/10)
+                            if balance>=10000:
+                                new_volume=1000
                         if new_volume != volume:
                             obj.volume = new_volume
                             obj.save()
