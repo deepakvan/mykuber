@@ -393,50 +393,18 @@ def get_signal(df):
     df['incr'] = calculate_incr(df)
     df['superd'] = ta.supertrend(df['high'],df['low'],df['close'],10,1.5)['SUPERTd_10_1.5']
     df['superv'] = ta.supertrend(df['high'], df['low'], df['close'], 10, 1.5)['SUPERT_10_1.5']
-    # Parameters  for big bars ---------------------
-    length = 10
-    threshold = 0.5
-    max_size_multiplier = 2.0
+    df['bigsuperd'] = ta.supertrend(df['high'], df['low'], df['close'], 10, 3.0)['SUPERTd_10_3.0']
 
-    # Calculate the size of each candle
-    df['candle_size'] = abs(df['close'] - df['open'])
+    issell = df['superd'].iloc[-2] == -1 and df['bigsuperd'].iloc[-2] == -1 and \
+                  df['superv'].iloc[-2] != df['superv'].iloc[-3]
 
-    # Calculate the average size of the last `length` candles
-    df['average_size'] = df['candle_size'].rolling(window=length).mean()
-
-    # Determine the maximum allowed size based on the average size
-    df['max_allowed_size'] = df['average_size'] * max_size_multiplier
-
-    # Determine if the current candle is significantly bigger than the average
-    df['is_big_bar'] = (df['candle_size'] > df['average_size'] * threshold) & (
-                df['candle_size'] <= df['max_allowed_size'])
+    isbuy = df['superd'].iloc[-2] == 1 and df['bigsuperd'].iloc[-2] == 1 and \
+                  df['superv'].iloc[-2] != df['superv'].iloc[-3]
 
 
-    isredbigbar = df['close'].iloc[-2] < df['open'].iloc[-2] and df['superd'].iloc[-2] == -1 and \
-                  df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
-                  df['is_big_bar'].iloc[-2] == True
-
-    isgreenbigbar = df['close'].iloc[-2] > df['open'].iloc[-2] and df['superd'].iloc[-2] == 1 and \
-                  df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
-                  df['is_big_bar'].iloc[-2] == True
-
-    # isdowntrend = df['superd'].iloc[-2] == -1 and df['superd'].iloc[-3] == -1
-    # isuptrend = df['superd'].iloc[-2] == 1 and df['superd'].iloc[-3] == 1
-    # ------------------------------------------------------
 
     df = df.iloc[-2, :]
     print(df)
-
-    #candleHeight = df['high'] - df['low']
-    # Calculate 50 % of the candle height
-    #halfCandleHeight = candleHeight * 0.5
-
-    # TrendShootingStar = (df['open'] < df['low'] + halfCandleHeight) and (df['close']< df['low'] + halfCandleHeight) and \
-    #                     df['incr'] < -0.1 and isdowntrend
-    #
-    # TrendHammer = (df['open'] > df['high'] - halfCandleHeight) and (df['close'] > df['high'] - halfCandleHeight) and \
-    #               df['incr'] > 0.1
-
 
     price_precision = len(str(df['open']).split('.')[1])
     if len(str(df['high']).split('.')[1]) > price_precision:
@@ -449,7 +417,7 @@ def get_signal(df):
     decimalpoint = float('0.'+'0'*(price_precision-1) + '1')
     triggerdecimalpoint = float('0.' + '0' * (price_precision - 1) + '3')
 
-    if isredbigbar:
+    if issell:
         SLTPRatio = 2  # 1:1.2
         # signal = 1
         BUY_PRICE = round(df['low']-decimalpoint, price_precision)
@@ -472,7 +440,7 @@ def get_signal(df):
         return trade
 
     # for long trade
-    elif isgreenbigbar:
+    elif isbuy:
         SLTPRatio = 2  # 1:1.2
         # signal = 1
         BUY_PRICE = round(df['high']+decimalpoint, price_precision) #df['high']
