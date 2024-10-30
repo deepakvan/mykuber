@@ -394,12 +394,27 @@ def get_signal(df):
     df['superd'] = ta.supertrend(df['high'],df['low'],df['close'],10,1.5)['SUPERTd_10_1.5']
     df['superv'] = ta.supertrend(df['high'], df['low'], df['close'], 10, 1.5)['SUPERT_10_1.5']
     df['bigsuperd'] = ta.supertrend(df['high'], df['low'], df['close'], 10, 3.0)['SUPERTd_10_3.0']
-
+    # Parameters  for big bars ---------------------
+    length = 10
+    threshold = 0.1
+    max_size_multiplier = 3.0
+    # Calculate the size of each candle
+    df['candle_size'] = abs(df['close'] - df['open'])
+    # Calculate the average size of the last `length` candles
+    df['average_size'] = df['candle_size'].rolling(window=length).mean()
+    # Determine the maximum allowed size based on the average size
+    df['max_allowed_size'] = df['average_size'] * max_size_multiplier
+    # Determine if the current candle is significantly bigger than the average
+    df['is_big_bar'] = (df['candle_size'] > df['average_size'] * threshold) & (
+            df['candle_size'] <= df['max_allowed_size'])
+    # ------------------------------------------------------
     issell = df['superd'].iloc[-2] == -1 and df['bigsuperd'].iloc[-2] == -1 and \
-                  df['superv'].iloc[-2] != df['superv'].iloc[-3]
+                  df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
+                  df['is_big_bar'].iloc[-2] == True
 
     isbuy = df['superd'].iloc[-2] == 1 and df['bigsuperd'].iloc[-2] == 1 and \
-                  df['superv'].iloc[-2] != df['superv'].iloc[-3]
+                  df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
+                  df['is_big_bar'].iloc[-2] == True
 
 
 
