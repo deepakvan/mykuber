@@ -432,19 +432,19 @@ def get_signal(df):
     decimalpoint = float('0.'+'0'*(price_precision-1) + '1')
     triggerdecimalpoint = float('0.' + '0' * (price_precision - 1) + '3')
 
-    if issell:
+    if issell: # buy in sell order
         SLTPRatio = 2  # 1:1.2
         # signal = 1
         BUY_PRICE = round(df['low']-decimalpoint, price_precision)
         BUY_PRICE_Trigger = round(df['low'], price_precision)
-        SL = round(df['high']+decimalpoint, price_precision)
-        SL_Trigger = SL #round(SL-((SL-BUY_PRICE)/2),price_precision)
-        TP = round(BUY_PRICE - SLTPRatio * (SL - BUY_PRICE),price_precision)
-        TP_Trigger = round(TP+triggerdecimalpoint,price_precision) #round(TP+((BUY_PRICE-TP)/2),price_precision)
-        last_buy_price = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.2), price_precision)
-        Trailing_SL1 = round(BUY_PRICE-((BUY_PRICE - TP)*0.2), price_precision)
-        Trailing_SL_Condition1 = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.8), price_precision)
-        trade = {"side": 'sell',
+        TP = round(df['high']+decimalpoint, price_precision)
+        TP_Trigger = TP #round(SL-((SL-BUY_PRICE)/2),price_precision)
+        SL = round(BUY_PRICE - SLTPRatio * (TP - BUY_PRICE),price_precision)
+        SL_Trigger = round(SL+triggerdecimalpoint,price_precision) #round(TP+((BUY_PRICE-TP)/2),price_precision)
+        last_buy_price = round(BUY_PRICE - ((TP - BUY_PRICE) * 0.4), price_precision)
+        Trailing_SL1 = round(BUY_PRICE+((TP - BUY_PRICE)*0.2), price_precision)
+        Trailing_SL_Condition1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.8), price_precision)
+        trade = {"side": 'buy',
                  "BUY_PRICE": BUY_PRICE, "BUY_PRICE_Trigger":BUY_PRICE_Trigger,
                  "last_buy_price": last_buy_price,
                  "SL": SL, "SL_Trigger":SL_Trigger,
@@ -455,19 +455,19 @@ def get_signal(df):
         return trade
 
     # for long trade
-    elif isbuy:
+    elif isbuy: # sell in buy order
         SLTPRatio = 2  # 1:1.2
         # signal = 1
         BUY_PRICE = round(df['high']+decimalpoint, price_precision) #df['high']
         BUY_PRICE_Trigger = round(df['high'], price_precision)
-        SL = round(df['low'] - decimalpoint, price_precision)  #df['low']
-        SL_Trigger = SL  #round(SL + ((BUY_PRICE - SL) / 2), price_precision)
-        TP = round(BUY_PRICE + SLTPRatio * (BUY_PRICE - SL),price_precision)
-        TP_Trigger = round(TP - triggerdecimalpoint, price_precision)
-        last_buy_price = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.2), price_precision)
-        Trailing_SL1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.2), price_precision)
-        Trailing_SL_Condition1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.8), price_precision)
-        trade = {"side": 'buy',
+        TP = round(df['low'] - decimalpoint, price_precision)  #df['low']
+        TP_Trigger = TP  #round(SL + ((BUY_PRICE - SL) / 2), price_precision)
+        SL = round(BUY_PRICE + SLTPRatio * (BUY_PRICE - TP),price_precision)
+        SL_Trigger = round(SL - triggerdecimalpoint, price_precision)
+        last_buy_price = round(BUY_PRICE + ((BUY_PRICE - TP) * 0.4), price_precision)
+        Trailing_SL1 = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.2), price_precision)
+        Trailing_SL_Condition1 = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.8), price_precision)
+        trade = {"side": 'sell',
                  "BUY_PRICE": BUY_PRICE, "BUY_PRICE_Trigger":BUY_PRICE_Trigger,
                  "last_buy_price": last_buy_price,
                  "SL": SL, "SL_Trigger":SL_Trigger,
