@@ -408,11 +408,11 @@ def get_signal(df):
     df['is_big_bar'] = (df['candle_size'] > df['average_size'] * threshold) & (
             df['candle_size'] <= df['max_allowed_size'])
     # ------------------------------------------------------
-    issell = df['superd'].iloc[-2] == -1 and df['bigsuperd'].iloc[-2] == -1 and \
+    issell = df['superd'].iloc[-2] == 1 and df['bigsuperd'].iloc[-2] == -1 and \
                   df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
                   df['is_big_bar'].iloc[-2] == True
 
-    isbuy = df['superd'].iloc[-2] == 1 and df['bigsuperd'].iloc[-2] == 1 and \
+    isbuy = df['superd'].iloc[-2] == -1 and df['bigsuperd'].iloc[-2] == 1 and \
                   df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
                   df['is_big_bar'].iloc[-2] == True
 
@@ -432,7 +432,7 @@ def get_signal(df):
     decimalpoint = float('0.'+'0'*(price_precision-1) + '1')
     triggerdecimalpoint = float('0.' + '0' * (price_precision - 1) + '3')
 
-    if issell: # buy in sell order
+    if isbuy:
         SLTPRatio = 2  # 1:1.2
         # signal = 1
         BUY_PRICE = round(df['low']-decimalpoint, price_precision)
@@ -444,6 +444,9 @@ def get_signal(df):
         last_buy_price = round(BUY_PRICE - ((TP - BUY_PRICE) * 0.4), price_precision)
         Trailing_SL1 = round(BUY_PRICE+((TP - BUY_PRICE)*0.2), price_precision)
         Trailing_SL_Condition1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.8), price_precision)
+        #tp again for double tp
+        TP = round((TP + (TP-BUY_PRICE)) + decimalpoint, price_precision)
+        TP_Trigger = TP  # round(SL-((SL-BUY_PRICE)/2),price_precision)
         trade = {"side": 'buy',
                  "BUY_PRICE": BUY_PRICE, "BUY_PRICE_Trigger":BUY_PRICE_Trigger,
                  "last_buy_price": last_buy_price,
@@ -455,7 +458,7 @@ def get_signal(df):
         return trade
 
     # for long trade
-    elif isbuy: # sell in buy order
+    elif issell:
         SLTPRatio = 2  # 1:1.2
         # signal = 1
         BUY_PRICE = round(df['high']+decimalpoint, price_precision) #df['high']
@@ -467,6 +470,9 @@ def get_signal(df):
         last_buy_price = round(BUY_PRICE + ((BUY_PRICE - TP) * 0.4), price_precision)
         Trailing_SL1 = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.2), price_precision)
         Trailing_SL_Condition1 = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.8), price_precision)
+        #tp again for double tp
+        TP = round((TP - (BUY_PRICE- TP)) - decimalpoint, price_precision)  # df['low']
+        TP_Trigger = TP
         trade = {"side": 'sell',
                  "BUY_PRICE": BUY_PRICE, "BUY_PRICE_Trigger":BUY_PRICE_Trigger,
                  "last_buy_price": last_buy_price,
@@ -530,7 +536,7 @@ def monitor_signal(client,signal_list,coinpair_list):
                 #print("current price from ticker",current_price,type(current_price))
                 #condition for buy or sell then break
                 if signal[1]['side']=='sell' and signal[0] in ordersList:
-                    if current_price<signal[1]['BUY_PRICE'] and current_price>signal[1]['last_buy_price']:
+                    if current_price>signal[1]['BUY_PRICE'] and current_price<signal[1]['last_buy_price']:
                         amount = volume * leverage  # (+loss_count)
                         place_order(client,signal,amount)
                         print("order placed for {0} and total money invested {1}, leverage {2} ".format(signal[0],amount,leverage))
@@ -540,7 +546,7 @@ def monitor_signal(client,signal_list,coinpair_list):
                         #break
 
                 elif signal[1]['side'] == 'buy' and signal[0] in ordersList:
-                    if current_price > signal[1]['BUY_PRICE'] and current_price < signal[1]['last_buy_price']:
+                    if current_price < signal[1]['BUY_PRICE'] and current_price > signal[1]['last_buy_price']:
                         amount = volume * leverage #(+ loss_count)
                         # print('Placing order for ', signal[0])
                         place_order(client, signal, amount)
