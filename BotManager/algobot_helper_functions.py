@@ -235,7 +235,7 @@ def place_order(client,signal,amount):
             print(resp2)
             models.BotOrders(order_id=str(resp2['orderId']), order_details=str(resp2)).save()
             models.BotLogs(description=f'{str(resp2)}').save()
-            #threading.Thread(target=trailing_sl, args=(client, resp2, qty,signal[1]["Trailing_stopLosses"])).start()
+            threading.Thread(target=trailing_sl, args=(client, resp2, qty,signal[1]["Trailing_stopLosses"])).start()
             sleep(2)
             tp_price = signal[1]['TP']
             tp_price_trigger = signal[1]['TP_Trigger']
@@ -273,7 +273,7 @@ def place_order(client,signal,amount):
             print(resp2)
             models.BotOrders(order_id=str(resp2['orderId']), order_details=str(resp2)).save()
             models.BotLogs(description=f'{str(resp2)}').save()
-            #threading.Thread(target=trailing_sl, args=(client, resp2, qty,signal[1]["Trailing_stopLosses"])).start()
+            threading.Thread(target=trailing_sl, args=(client, resp2, qty,signal[1]["Trailing_stopLosses"])).start()
             sleep(2)
             tp_price = signal[1]['TP']
             tp_price_trigger = signal[1]['TP_Trigger']
@@ -390,31 +390,23 @@ def get_signal(df):
     #print("inside get signal")
     #print(df)
     df['ema5'] = ta.ema(df['close'], 5)
-    df['incr'] = calculate_incr(df)
     df['superd'] = ta.supertrend(df['high'],df['low'],df['close'],10,1.5)['SUPERTd_10_1.5']
     df['superv'] = ta.supertrend(df['high'], df['low'], df['close'], 10, 1.5)['SUPERT_10_1.5']
     df['bigsuperd'] = ta.supertrend(df['high'], df['low'], df['close'], 10, 3.0)['SUPERTd_10_3.0']
-    # Parameters  for big bars ---------------------
-    length = 10
-    threshold = 0.1
-    max_size_multiplier = 3.0
-    # Calculate the size of each candle
-    df['candle_size'] = abs(df['close'] - df['open'])
-    # Calculate the average size of the last `length` candles
-    df['average_size'] = df['candle_size'].rolling(window=length).mean()
-    # Determine the maximum allowed size based on the average size
-    df['max_allowed_size'] = df['average_size'] * max_size_multiplier
-    # Determine if the current candle is significantly bigger than the average
-    df['is_big_bar'] = (df['candle_size'] > df['average_size'] * threshold) & (
-            df['candle_size'] <= df['max_allowed_size'])
-    # ------------------------------------------------------
+    
+    istrendbuy = df['superd'].iloc[-2] == 1 and df['superd'].iloc[-3] == 1 and \
+                 df['bigsuperd'].iloc[-2] == 1 and \
+                 df['superv'].iloc[-2] != df['superv'].iloc[-3]
+                 
+    istrendsell = df['superd'].iloc[-2] == -1 and df['superd'].iloc[-3] == -1 and \
+                    df['bigsuperd'].iloc[-2] == -1 and \
+                    df['superv'].iloc[-2] != df['superv'].iloc[-3] 
+
     issell = df['superd'].iloc[-2] == 1 and df['bigsuperd'].iloc[-2] == -1 and \
-                  df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
-                  df['is_big_bar'].iloc[-2] == True
+                  df['superv'].iloc[-2] != df['superv'].iloc[-3]
 
     isbuy = df['superd'].iloc[-2] == -1 and df['bigsuperd'].iloc[-2] == 1 and \
-                  df['superv'].iloc[-2] != df['superv'].iloc[-3] and \
-                  df['is_big_bar'].iloc[-2] == True
+                  df['superv'].iloc[-2] != df['superv'].iloc[-3]
 
 
 
@@ -439,11 +431,11 @@ def get_signal(df):
         BUY_PRICE_Trigger = round(df['low'], price_precision)
         TP = round(df['high']+decimalpoint, price_precision)
         TP_Trigger = TP #round(SL-((SL-BUY_PRICE)/2),price_precision)
-        SL = round(BUY_PRICE - SLTPRatio * (TP - BUY_PRICE),price_precision)
+        SL = round(BUY_PRICE - (TP - BUY_PRICE),price_precision)
         SL_Trigger = round(SL+triggerdecimalpoint,price_precision) #round(TP+((BUY_PRICE-TP)/2),price_precision)
         last_buy_price = round(BUY_PRICE - ((TP - BUY_PRICE) * 0.4), price_precision)
-        Trailing_SL1 = round(BUY_PRICE+((TP - BUY_PRICE)*0.2), price_precision)
-        Trailing_SL_Condition1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.8), price_precision)
+        Trailing_SL1 = round(BUY_PRICE+((TP - BUY_PRICE)*0.1), price_precision) #aboe the 0.1 of entry price 
+        Trailing_SL_Condition1 = round(BUY_PRICE + ((TP - BUY_PRICE) * 0.9), price_precision) # near the 1x tp
         #tp again for double tp
         TP = round((TP + (TP-BUY_PRICE)) + decimalpoint, price_precision)
         TP_Trigger = TP  # round(SL-((SL-BUY_PRICE)/2),price_precision)
@@ -465,11 +457,11 @@ def get_signal(df):
         BUY_PRICE_Trigger = round(df['high'], price_precision)
         TP = round(df['low'] - decimalpoint, price_precision)  #df['low']
         TP_Trigger = TP  #round(SL + ((BUY_PRICE - SL) / 2), price_precision)
-        SL = round(BUY_PRICE + SLTPRatio * (BUY_PRICE - TP),price_precision)
+        SL = round(BUY_PRICE + (BUY_PRICE - TP),price_precision)
         SL_Trigger = round(SL - triggerdecimalpoint, price_precision)
         last_buy_price = round(BUY_PRICE + ((BUY_PRICE - TP) * 0.4), price_precision)
-        Trailing_SL1 = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.2), price_precision)
-        Trailing_SL_Condition1 = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.8), price_precision)
+        Trailing_SL1 = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.1), price_precision)
+        Trailing_SL_Condition1 = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.9), price_precision)
         #tp again for double tp
         TP = round((TP - (BUY_PRICE- TP)) - decimalpoint, price_precision)  # df['low']
         TP_Trigger = TP
@@ -482,7 +474,48 @@ def get_signal(df):
                  }
         # print(trade)
         return trade
-
+    elif istrendbuy:
+        SLTPRatio = 2
+        # signal = 2
+        BUY_PRICE = round(df['high']+decimalpoint, price_precision) #df['high']
+        BUY_PRICE_Trigger = round(df['high'], price_precision)
+        SL = round(BUY_PRICE - (BUY_PRICE - df['low'] - decimalpoint),price_precision)
+        SL_Trigger = round(SL - triggerdecimalpoint, price_precision)
+        TP = round(BUY_PRICE + ((BUY_PRICE - SL ) * SLTPRatio),price_precision)
+        TP_Trigger = round(TP - triggerdecimalpoint,price_precision)
+        last_buy_price = round(BUY_PRICE + (( TP - BUY_PRICE) * 0.2), price_precision)
+        Trailing_SL1 = round(BUY_PRICE+((BUY_PRICE - SL)*0.1), price_precision) #aboe the 0.1 of entry price 
+        Trailing_SL_Condition1 = round(BUY_PRICE + ((BUY_PRICE - SL) * 0.9), price_precision) # near the 1x tp
+        trade = {"side": 'buy',
+                 "BUY_PRICE": BUY_PRICE, "BUY_PRICE_Trigger":BUY_PRICE_Trigger,
+                 "last_buy_price": last_buy_price,
+                 "SL": SL, "SL_Trigger":SL_Trigger,
+                 "TP": TP, "TP_Trigger":TP_Trigger,
+                 "Trailing_stopLosses":{"Trailing_SL1":Trailing_SL1,"Trailing_SL_Condition1":Trailing_SL_Condition1},
+                 }
+        # print(trade)
+        return trade
+    elif istrendsell:
+        SLTPRatio = 2
+        # signal = 2
+        BUY_PRICE = round(df['low']-decimalpoint, price_precision) #df['low']
+        BUY_PRICE_Trigger = round(df['low'], price_precision)
+        SL = round(BUY_PRICE + (df['high'] - BUY_PRICE + decimalpoint),price_precision)
+        SL_Trigger = round(SL + triggerdecimalpoint, price_precision)
+        TP = round(BUY_PRICE - ((SL - BUY_PRICE) * SLTPRatio),price_precision)
+        TP_Trigger = round(TP + triggerdecimalpoint,price_precision)
+        last_buy_price = round(BUY_PRICE - ((BUY_PRICE - TP) * 0.2), price_precision)
+        Trailing_SL1 = round(BUY_PRICE-((SL - BUY_PRICE)*0.1), price_precision)
+        Trailing_SL_Condition1 = round(BUY_PRICE - ((SL - BUY_PRICE) * 0.9), price_precision)
+        trade = {"side": 'sell',
+                 "BUY_PRICE": BUY_PRICE, "BUY_PRICE_Trigger":BUY_PRICE_Trigger,
+                 "last_buy_price": last_buy_price,
+                 "SL": SL, "SL_Trigger":SL_Trigger,
+                 "TP": TP, "TP_Trigger":TP_Trigger,
+                 "Trailing_stopLosses":{"Trailing_SL1":Trailing_SL1,"Trailing_SL_Condition1":Trailing_SL_Condition1},
+                 }
+        # print(trade)
+        return trade
     return None
 
 
