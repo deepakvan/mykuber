@@ -235,7 +235,7 @@ def place_order(client,signal,amount):
             print(resp2)
             models.BotOrders(order_id=str(resp2['orderId']), order_details=str(resp2)).save()
             models.BotLogs(description=f'{str(resp2)}').save()
-            threading.Thread(target=trailing_sl, args=(client, resp2, qty,signal[1]["Trailing_stopLosses"])).start()
+            #threading.Thread(target=trailing_sl, args=(client, resp2, qty,signal[1]["Trailing_stopLosses"])).start()
             sleep(2)
             tp_price = signal[1]['TP']
             tp_price_trigger = signal[1]['TP_Trigger']
@@ -273,7 +273,7 @@ def place_order(client,signal,amount):
             print(resp2)
             models.BotOrders(order_id=str(resp2['orderId']), order_details=str(resp2)).save()
             models.BotLogs(description=f'{str(resp2)}').save()
-            threading.Thread(target=trailing_sl, args=(client, resp2, qty,signal[1]["Trailing_stopLosses"])).start()
+            #threading.Thread(target=trailing_sl, args=(client, resp2, qty,signal[1]["Trailing_stopLosses"])).start()
             sleep(2)
             tp_price = signal[1]['TP']
             tp_price_trigger = signal[1]['TP_Trigger']
